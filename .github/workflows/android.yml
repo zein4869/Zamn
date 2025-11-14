@@ -1,0 +1,46 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Lấy mã nguồn
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      # 2. Cài JDK (Android Studio Hedgehog trở lên dùng JDK 17)
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: 17
+
+      # 3. Cache Gradle để build nhanh hơn
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+
+      # 4. Cấp quyền cho gradlew
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 5. Build APK debug
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      # 6. Upload APK để tải về (artifact)
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
